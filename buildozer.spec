@@ -1,14 +1,14 @@
 [app]
 title = Chicken Run
-icon.filename = icon.png
 package.name = chickenrun
 package.domain = org.obs
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,wav,json,txt
-version = 0.8.2
+version = 0.8.3
 requirements = python3,pygame
 orientation = landscape
 fullscreen = 1
+icon.filename = icon.png
 android.permissions = INTERNET
 android.api = 31
 android.minapi = 21
