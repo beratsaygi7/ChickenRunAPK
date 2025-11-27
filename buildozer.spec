@@ -1,5 +1,6 @@
 [app]
 title = Chicken Run
+icon.filename = icon.png
 package.name = chickenrun
 package.domain = org.obs
 source.dir = .
