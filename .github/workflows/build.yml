@@ -1,50 +1,69 @@
-name: Build APK
+name: Build Chicken Run APK
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
 
     steps:
       - uses: actions/checkout@v3
 
-      # 1. Java 17 Kurulumu (Android için şart)
-      - name: Setup Java
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '17'
+      # 1. Gereksiz Dosyaları Temizle (Yer Aç)
+      - name: Free Disk Space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
 
-      # 2. Python 3.10 Kurulumu
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-
-      # 3. Gerekli Kütüphaneler (Hepsini yüklüyoruz)
+      # 2. Gerekli Kütüphaneleri Kur
       - name: Install Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            build-essential git ffmpeg libsdl2-dev libsdl2-image-dev \
-            libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev \
-            libavformat-dev libavcodec-dev zlib1g-dev libffi-dev libssl-dev \
-            autoconf libtool automake zip unzip
+            python3-pip build-essential git python3 python3-dev ffmpeg \
+            libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
+            libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev \
+            zlib1g-dev libgstreamer1.0-gstreamer-plugins-base gstreamer1.0-plugins-base \
+            gstreamer1.0-plugins-good libffi-dev libssl-dev autoconf libtool automake \
+            zip unzip openjdk-17-jdk
 
-      # 4. Buildozer Kurulumu
+      # 3. Buildozer Kur
       - name: Install Buildozer
         run: |
-          pip install --upgrade pip
-          pip install buildozer cython==0.29.36
+          pip3 install --upgrade pip
+          pip3 install buildozer cython==0.29.33
 
-      # 5. APK Derleme (Otomatik Onaylı)
+      # 4. Buildozer Ayar Dosyasını (spec) Otomatik Oluştur
+      # Kral, senin ayar dosyanı burada kodla oluşturuyoruz ki hata olmasın.
+      - name: Create buildozer.spec
+        run: |
+          buildozer init
+          # Ayarları Değiştir
+          sed -i 's/title = My Application/title = Chicken Run/' buildozer.spec
+          sed -i 's/package.name = myapp/package.name = chickenrun/' buildozer.spec
+          sed -i 's/package.domain = org.test/package.domain = org.obs/' buildozer.spec
+          sed -i 's/requirements = python3,kivy/requirements = python3,pygame/' buildozer.spec
+          sed -i 's/orientation = portrait/orientation = landscape/' buildozer.spec
+          sed -i 's/fullscreen = 0/fullscreen = 1/' buildozer.spec
+          # İkon ayarını aç (icon.png varsa kullanır)
+          sed -i 's/# icon.filename = %(source.dir)s\/data\/icon.png/icon.filename = icon.png/' buildozer.spec
+          # Android sürüm ayarları
+          sed -i 's/android.api = 27/android.api = 31/' buildozer.spec
+          sed -i 's/android.minapi = 21/android.minapi = 21/' buildozer.spec
+          sed -i 's/android.arch = armeabi-v7a/android.arch = armeabi-v7a/' buildozer.spec
+          # İzinler
+          sed -i 's/android.permissions = INTERNET/android.permissions = INTERNET/' buildozer.spec
+
+      # 5. APK Derle
       - name: Build APK
         run: |
           yes | buildozer android debug
 
-      # 6. Sonucu Yükle
+      # 6. APK'yı Yükle
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
